@@ -1,3 +1,3 @@
 # PlasmoGlobalEvo
 
-#Collection of scipts for evolutionary analysis of Plasmodium variant date 
+Collection of scripts for evolutionary analysis of Plasmodium variants data. 
