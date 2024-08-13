@@ -3,7 +3,7 @@ import random
 import os
 
 
-def sampler(input_txt, country_name, num_samples):
+def sampler(input_txt, country_name, num_samples, output_directory):
     # Open the tab-delimited text file
     with open(input_txt, 'r') as f:
         # Split lines by tabs and create a list for each line
@@ -28,18 +28,20 @@ def sampler(input_txt, country_name, num_samples):
             data[sample_id] = country
 
     
-
     # Create a directory to store the results
-    output_directory = 'Malaria/Samples/SamplesID/'
     os.makedirs(output_directory, exist_ok=True)  # Create the directory if it doesn't exist
     
+    
+    # Make a name tag for the output file using 'output_directory'
+    output_name = os.path.join(output_directory, "{}.txt".format(country_name))
+
     # Make a name tag for the output file
-    output_name = "Malaria/Samples/SamplesID/{}.txt".format(country_name)
+   # output_name = "Samples/SamplesID/{}.txt".format(country_name)
     
     # Check if file exist
     if os.path.exists(output_name):
         os.remove(output_name) # Remove file if it exisits 
-
+        print(f"file {output_name} was removed")
     # select samples from the specified country
     country_samples = {k: v for k, v in data.items() if v == country_name}
 
@@ -47,7 +49,12 @@ def sampler(input_txt, country_name, num_samples):
     if len(country_samples) == 0:
         print("No samples available for", country_name)
         sys.exit(0)
-    
+
+    if num_samples <= 0 or num_samples > len(country_samples):
+        print(f"Invalid number of samples requested for {country_name}.")
+        return
+
+
     # Sample the specified number of samples
     samples = random.sample(list(country_samples.keys()), int(num_samples))
 
@@ -57,14 +64,14 @@ def sampler(input_txt, country_name, num_samples):
             # Separates the sample's name using a newline character
             file.write(item + "\n")
 
-if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python script_name.py samples_file country_name num_samples")
-        sys.exit(1)
+#if __name__ == "__main__":
+#    if len(sys.argv) != 4:
+ #       print("Usage: python script_name.py samples_file country_name num_samples")
+ #       sys.exit(1)
 
-input_txt = sys.argv[1]
-country_name = sys.argv[2]
-num_samples = sys.argv[3]
+#input_txt = sys.argv[1]
+#country_name = sys.argv[2]
+#num_samples = sys.argv[3]
 
-sampler(input_txt, country_name, num_samples)
+#sampler(input_txt, country_name, num_samples)
 

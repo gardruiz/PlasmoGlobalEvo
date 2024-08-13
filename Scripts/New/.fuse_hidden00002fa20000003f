@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Check if both the VCF folder and genomic region are provided as arguments
+if [ "$#" -ne 3 ]; then
+	echo "Usage: $0 <vcf_dir> <genomic_region> <bed_file>"
+    exit 1
+fi
+
+vcf_dir="$1"
+genomic_region="$2"
+bed_file="$3"
+sequences_dir="$vcf_dir/sequences"
+
+# Create the sequences directory if it doesn't exist
+mkdir -p "$sequences_dir"
+
+# Path to scripts
+dna_script="Scripts/vcf_to_DNA.sh"
+cds_script="Scripts/CDS.py"
+
+# Loop through all .vcf files in the folder
+for vcf_file in "$vcf_dir"/*.vcf.gz; do
+    if [ -f "$vcf_file" ]; then
+        
+	# Normalize the VCF file using bcftools
+	normalised_vcf_file="$sequences_dir/$(basename "${vcf_file%.vcf.gz}_normalized.vcf")"
+        bcftools norm -a -f Genome/Pfalciparum.genome.fasta -o "$normalised_vcf_file" "$vcf_file"
+
+    	# Run bcftools and count the lines
+	variants=$(bcftools view -H "$vcf_file" | wc -l)
+
+	# Print the result to the screen
+	echo "Number of variants in the VCF file: $variants"
+	
+	# Run bcftools view to filter multiallelic sites and indels
+	filtered_vcf_file="$sequences_dir/$(basename "${vcf_file%.vcf.gz}_filtered.vcf")"
+    #	bcftools view -e 'N_ALT > 1 || TYPE="indel"' -o "$filtered_vcf_file" "$vcf_file"
+	bcftools view -e 'N_ALT > 1 || TYPE="indel" || (ALT !~ "^[ATCGatcg]+$")' -o "$filtered_vcf_file" "$vcf_file"
+
+
+
+	# Run bcftools and count the lines
+	no_indels=$(bcftools view -H "$filtered_vcf_file" | wc -l)
+
+	# Print the result to the screen
+	echo "Number of varinats after filtering indels: $no_indels"
+
+        # Compress the filtered VCF file to VCF.gz
+        compressed_vcf_file="$sequences_dir/$(basename "${normalised_vcf_file%_normalized.vcf}.vcf.gz")"
+        bgzip -c "$filtered_vcf_file" > "$compressed_vcf_file"
+        tabix -p vcf "$compressed_vcf_file"     
+        
+        # Run the vcf_to_DNA.sh script with the filtered VCF file and genomic region
+        echo "Processing $vcf_file for genomic region $genomic_region..."
+        bash "$dna_script" "$compressed_vcf_file" "$genomic_region"
+
+	# Run the CDS.py script with the output of vcf_to_DNA.sh
+        echo "Obtaining CDS from DNA..."
+	cds_file="$sequences_dir/$(basename "${vcf_file%.vcf.gz}_CDS.fasta")"
+	dna_output="$sequences_dir/$(basename "${vcf_file%.vcf.gz}.fasta")"
+	
+	python3 "$cds_script" "$dna_output" "$bed_file" "$cds_file"
+
+        # Delete intermediate files after using them
+        rm "$normalised_vcf_file" "$filtered_vcf_file" "$compressed_vcf_file" "$compressed_vcf_file.tbi" "$dna_output" $sequences_dir/.fuse_hidden*
+    fi
+done
+
+
+

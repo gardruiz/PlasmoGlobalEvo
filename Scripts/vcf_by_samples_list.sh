@@ -19,6 +19,7 @@ fi
 vcf_dir=$(dirname "$vcf_path")
 vcf_file=$(basename "$vcf_path")
 
+
 # Check if the VCF file exists
 if [ ! -f "$vcf_dir/$vcf_file" ]; then
     echo "VCF file $vcf_dir/$vcf_file does not exist."
@@ -44,14 +45,17 @@ for sample_list_dir in "$parent_dir"/*/; do
             mkdir -p "$output_dir"
 
             # Define the output file path
-            output_file="$output_dir/$sample_name.vcf"
+            output_file="$output_dir/$sample_name"_"$(basename "$vcf_file" .vcf).vcf.gz"
+
+	    # Define the a temporary input file
+	    input_file="$vcf_dir/$vcf_file"
 
             # Run the script with the VCF file, sample list file, and output file
-            Scripts/vcf_by_sample.sh "$vcf_dir/$vcf_file" "$sample_list_file" "$output_file"
+            Scripts/vcf_by_sample.sh "$input_file" "$sample_list_file" "$output_file"
 
             # Message to indicate completion
             echo "Processed $sample_list_file"
         done
     fi
 done
-    
+
