@@ -2,6 +2,7 @@ import sys
 import random
 import os
 
+###This script samples a given number of samples ID ###
 
 def sampler(input_txt, country_name, num_samples, output_directory, years_file):
     # Open the tab-delimited text file

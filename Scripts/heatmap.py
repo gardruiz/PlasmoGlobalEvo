@@ -9,7 +9,7 @@ import numpy as np
 from scipy.cluster import hierarchy
 
 if len(sys.argv) != 3:
-    print("Usage: ./heatmap.py Dxy_file Gene_name")
+    print("Usage: ./heatmap.py dnds_file Gene_name")
     sys.exit(1)
 
 
