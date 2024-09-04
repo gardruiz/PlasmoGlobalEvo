@@ -1,58 +1,61 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
-  echo "Usage: $0 <gene_locations_file>  <sample_list_directory>"
+if [ $# -ne 4 ]; then
+  echo "Usage: $0 <gene_names_file>  <sample_list_directory> <vcf_file> <GFF_file>" 
   exit 1
 fi
 
 gene_locations_file="$1"
 sample_list_parent_dir="$2"
+input_file="$3"
+gff_file="$4"
 gene_locations_output_file="${gene_locations_file%.*}_locations.txt"
-gene_locations_output_directory="/home/Daniel/Malaria/Genome/Genes"
+gene_locations_output_directory="Genome/genes"
 
 # Create the output directory if it doesn't exist
 mkdir -p "$gene_locations_output_directory"
 
 while read word; do
-  result=$(grep -w "Name=$word" /home/Daniel/Malaria/Genome/Pfalciparum_replace_Pf3D7_MIT_v3_with_Pf_M76611.gff | cut -f1,4,5)
+  result=$(grep -w "Name=$word" "$gff_file" | cut -f1,4,5)
   
   # Append the $word as the first term in each line of the result
   while read line; do
-    echo "$word $line" >> "$gene_locations_output_directory/$gene_locations_output_file"
+    echo "$word $line" >> "$gene_locations_output_file"
   done <<< "$result"
 
-  # Loop through each line in the input file
+  # Loop through each line in the genes file
   while IFS=$'\t' read -r field1 field2 field3; do
     # Construct the argument using the fields
     arg="$field1:$field2-$field3"
-
-    # Construct the input file name
-    input_file="$field1.pf7.vcf.gz"
-
+    
     # Create the output directory 
-    vcf_output_directory="/home/Daniel/Malaria/Variants/vcf"
+    vcf_output_directory="Variants/$word"
+    mkdir -p "$vcf_output_directory"
 
     # Construct the output file name
-    vcf_output_file="vcf_output_directory/$word.vcf"
-    
+    vcf_output_file="$vcf_output_directory/$word.vcf"
+  
+    # Print the bcftools command for debugging
+    echo "Running command: bcftools view --threads 8 -r \"$arg\" \"$input_file\" -o \"$vcf_output_file\""
+
     # Run your command with the constructed argument
-    bcftools view -Oz --threads 8  -R "$arg"  $input_file -o $vcf_output_file
+    bcftools view  --threads 8  -r "$arg"  $input_file -o $vcf_output_file
 
     # Check if vcftools completed successfully
     if [ $? -eq 0 ]; then
-	    echo "Information for specified samples was successfully extracted and saved to $vcf_output_file."
+	    echo "Information for specified region was successfully extracted and saved to $vcf_output_file."
     else
 	    echo "Error: vcftools failed to extract information for $word."
 	    exit 1
     fi
 
     # Extract the VCF directory and file name
-    vcf_dir=$(dirname "$vcf_output_directory")
+    vcf_dir=$(dirname "$vcf_output_file")
     vcf_file=$"$vcf_output_file"
 
     # Check if the VCF file exists
-    if [ ! -f "$vcf_dir/$vcf_file" ]; then
-    echo "VCF file $vcf_dir/$vcf_file does not exist."
+    if [ ! -f "$vcf_file" ]; then
+    echo "VCF file $vcf_file does not exist."
       exit 1
     fi
 
@@ -78,7 +81,7 @@ while read word; do
               output_file="$output_dir/$sample_name.vcf"
 
               # Run the script with the VCF file, sample list file, and output file
-              Scripts/vcf_by_sample.sh "$vcf_dir/$vcf_file" "$sample_list_file" "$output_file"
+              Scripts/vcf_by_sample.sh "$vcf_file" "$sample_list_file" "$output_file"
 
               # Message to indicate completion                          
               echo "Processed $sample_list_file"
