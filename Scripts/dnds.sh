@@ -84,24 +84,26 @@ EOL
 
 }
 
-#Loop running dnds for files in population 1
+# Loop running dN/dS for unique pairs in population 1
+for ((i = 0; i < ${#pop1_files[@]}; i++)); do
+        run_dnds "${pop1_files[i]}" "${pop1_files[i]}"
+	for ((j = i + 1; j < ${#pop1_files[@]}; j++)); do
+        run_dnds "${pop1_files[i]}" "${pop1_files[j]}"
+    done
+done
+
+# Loop running dN/dS for unique pairs in population 2
+for ((i = 0; i < ${#pop2_files[@]}; i++)); do
+        run_dnds "${pop2_files[i]}" "${pop2_files[i]}"
+	for ((j = i + 1; j < ${#pop2_files[@]}; j++)); do
+        run_dnds "${pop2_files[i]}" "${pop2_files[j]}"
+    done
+done
+
+# Loop running dN/dS for all pairs between population 1 and population 2
 for file1 in "${pop1_files[@]}"; do
-    for file2 in "${pop1_files[@]}"; do
+    for file2 in "${pop2_files[@]}"; do
         run_dnds "$file1" "$file2"
     done
 done
 
-#Loop runnin dnds for files in population 2
-for file1 in "${pop2_files[@]}"; do
-    for file2 in "${pop2_files[@]}"; do
-        run_dnds "$file1" "$file2"
-        
-    done
-done
-
-#Loop running dnds for files in population 1 vs files in population 2
-for file1 in "${pop1_files[@]}"; do
-    for file2 in "${pop2_files[@]}"; do
-        run_dnds "$file1" "$file2"
-    done
-done
