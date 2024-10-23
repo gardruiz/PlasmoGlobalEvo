@@ -16,7 +16,7 @@ pop2_files=("$pop2_directory"/*.fasta)
 # Create a folder to store results
 
 gene_name=$(basename "$(dirname "$(dirname "$pop1_directory")")")
-results_folder="Results/dnds/yn00/$gene_name"
+results_folder="results/$gene_name"
 
 
 
@@ -27,25 +27,43 @@ run_dnds() {
     file1="$1"
     file2="$2"
 
-    # Check if tmp directory exists, create if not
-    tmp_directory="tmp"
-    if [ ! -d "$tmp_directory" ]; then
-        mkdir "$tmp_directory"
-    fi
+    # Creates unique id
+    uuid=$(uuidgen)
 
     # Concatenate the fasta files
-#    concatenated_file="tmp/concat.fasta"
-    concatenated_file="tmp/align.fasta"
+    concatenated_file="/tmp/align${uuid}.fasta"
     cat "$file1" "$file2" > "$concatenated_file"
 
-    # Convert the sequences to PHYLIP format
-    python Scripts/fasta_to_phylip_sequential.py tmp/align.fasta tmp/concatenated.phy
+    # Create YN00 input file name
+    yn00_input_file="/tmp/aling${uuid}.phy"
+    yn00_output_file="tmp/yn00_output_${uuid}.txt"
 
-    # Run CODEML using the control file, automatically press "Enter"
-    yn00 Config/yn00_control_file.ctl
+    # Convert the sequences to PHYLIP format
+    python Scripts/fasta_to_phylip_sequential.py $concatenated_file $yn00_input_file
+    
+
+  
+
+    # Create a unique control file for YN00
+    control_file="Config/yn00_control_file_${uuid}.ctl"
+    cat > "$control_file" <<EOL
+seqfile = $yn00_input_file       * sequence data file name
+outfile = $yn00_output_file      * main result file name
+
+* Additional options (optional):
+verbose = 1               * level of output detail (0: minimal, 1: detailed)
+icode = 0                 * genetic code (0: universal code)
+weighting = 0             * weighting for transition/transversion ratio estimation
+commonf3x4 = 0            * whether to use common frequencies for 3x4 codon table
+EOL
+
+    # Run CODEML using the generated control file
+    yn00 "$control_file"
+  
+
 
     # Calculate dN/dS using grep and awk
-    result=$(awk '/seq\. seq./,/LWL85, LPB93 & LWLm methods/ {if (!/LWL85, LPB93 & LWLm methods/) print}' tmp/yn00_output.txt | awk '{sumdN += $8; sumdS += $11} END {print sumdN/NR "\t" sumdS/NR "\t" (sumdN/NR)/(sumdS/NR)}')
+    result=$(awk '/seq\. seq./,/LWL85, LPB93 & LWLm methods/ {if (!/LWL85, LPB93 & LWLm methods/) print}' "$yn00_output_file" | awk '{sumdN += $8; sumdS += $11} END {print sumdN/NR "\t" sumdS/NR "\t" (sumdN/NR)/(sumdS/NR)}')
     
     country1=$(basename "$1" | cut -d '_' -f 1)
     country2=$(basename "$2" | cut -d '_' -f 1)
@@ -59,10 +77,10 @@ run_dnds() {
     filename="$(basename "$file1" .fasta)-$(basename "$file2" .fasta).out"
 
     # Store codeml output
-    mv tmp/yn00_output.txt "$results_folder/$filename"
+    mv "$yn00_output_file" "$results_folder/$filename"
 
     # Clean up temporary files
-    rm tmp/concat.fasta tmp/align.fasta  tmp/concatenated.phy 2ML.dN  2ML.dS  2ML.t 2NG.dN  2NG.dS  2NG.t   2YN.dN  2YN.dS  2YN.t rst rst1 rub
+    rm  "$yn00_input_file" "$control_file" 
 
 }
 
