@@ -1,0 +1,15 @@
+Number_of_samples=50
+Populations_1_file=Config/country_list_africa.txt
+Populations_2_file=Config/country_list_asia.txt
+Samples_file_dir=Samples/SamplesID/50_samples
+Years_file=Config/samples_years.txt
+Samples_1_output_dir=Samples/SamplesID/50_samples/Africa
+Samples_2_output_dir=Samples/SamplesID/50_samples/Asia
+VCF_file=Variants/filtered_variants/d/Pf.vcf.gz
+GFF_file=Genome/Genes/Pfalciparum_replace_Pf3D7_MIT_v3_with_Pf_M76611.gff
+Samples_ID_file=Samples/Pf7_samples.txt 
+Gene_names_file=Genome/Genes/genes_ids/output_file_4.txt
+Pipelines= dxy
+pMK=Falase
+Smoothing=False
+Use_average_ds=False
